@@ -1,32 +1,23 @@
 import { Hono } from "hono";
-import type { FC } from "hono/jsx";
+import { renderToString } from "react-dom/server";
 
 const app = new Hono();
 
-const Layout: FC = (props) => {
-  return (
-    <html>
-      <body>{props.children}</body>
-    </html>
-  );
-};
-
-const Top: FC<{ messages: string[] }> = (props: { messages: string[] }) => {
-  return (
-    <Layout>
-      <h1>Hello Hono</h1>
-      <ul>
-        {props.messages.map((message) => (
-          <li>{message}</li>
-        ))}
-      </ul>
-    </Layout>
-  );
-};
-
 app.get("/", (c) => {
-  const messages = ["Good morning", "bye"];
-  return c.html(<Top messages={messages} />);
+  return c.html(
+    renderToString(
+      <html lang="en">
+        <head>
+          <meta charSet="utf-8" />
+          <meta content="width=device-width, initial-scale=1" name="viewport" />
+        </head>
+        <script type="module" src="/src/client.tsx" />
+        <body>
+          <div id="root" />
+        </body>
+      </html>,
+    ),
+  );
 });
 
 export default app;
