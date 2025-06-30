@@ -5,7 +5,7 @@ const App = () => {
   return (
     <div>
       <h1>Hello</h1>
-      <Button>Click me!</Button>
+      <Button onClick={() => alert("ok")}>Click me!</Button>
     </div>
   );
 };
