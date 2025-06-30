@@ -15,8 +15,9 @@ app
     }),
   )
   .get("/", async (c) => {
+    const isProduction = process.env.NODE_ENV === "production";
     let manifest = {};
-    if (process.env.NODE_ENV === "production") {
+    if (isProduction) {
       manifest = await import("../dist/.vite/manifest.json");
     }
     const stream = await renderToReadableStream(
@@ -25,6 +26,11 @@ app
           <meta charSet="utf-8" />
           <meta content="width=device-width, initial-scale=1" name="viewport" />
           <title>PrestoPosti</title>
+          {isProduction ? (
+            <link rel="stylesheet" href={manifest["src/client.tsx"].css} />
+          ) : (
+            ""
+          )}
         </head>
         <body>
           <App />
@@ -33,9 +39,7 @@ app
       {
         // Load compiled entry script if applicable
         bootstrapScripts: [
-          process.env.NODE_ENV === "production"
-            ? manifest["src/client.tsx"].file
-            : "/src/client.tsx",
+          isProduction ? manifest["src/client.tsx"].file : "/src/client.tsx",
         ],
       },
     );

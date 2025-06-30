@@ -1,4 +1,5 @@
 import { defineConfig } from "vite";
+import tailwindcss from "@tailwindcss/vite";
 import devServer, { defaultOptions } from "@hono/vite-dev-server";
 import bunAdapter from "@hono/vite-dev-server/bun";
 
@@ -11,6 +12,7 @@ export default defineConfig(({ mode }) => {
           input: "./src/client.tsx",
         },
       },
+      plugins: [tailwindcss()],
     };
   } else {
     return {
@@ -18,6 +20,7 @@ export default defineConfig(({ mode }) => {
         external: ["react", "react-dom"],
       },
       plugins: [
+        tailwindcss(),
         devServer({
           adapter: bunAdapter,
           exclude: ["/*", ...defaultOptions.exclude],
