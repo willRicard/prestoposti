@@ -15,20 +15,32 @@ app
     }),
   )
   .get("/", async (c) => {
+    let manifest = {};
+    if (process.env.NODE_ENV === "production") {
+      manifest = await import("../dist/.vite/manifest.json");
+    }
     const stream = await renderToReadableStream(
       <html lang="en">
         <head>
           <meta charSet="utf-8" />
           <meta content="width=device-width, initial-scale=1" name="viewport" />
           <title>PrestoPosti</title>
-          <script type="module" src="/src/client.tsx" />
         </head>
         <body>
           <App />
         </body>
       </html>,
+      {
+        // Load compiled entry script if applicable
+        bootstrapScripts: [
+          process.env.NODE_ENV === "production"
+            ? manifest["src/client.tsx"].file
+            : "/src/client.tsx",
+        ],
+      },
     );
     return c.body(stream, {
+      // Enable support for Web Streams
       headers: {
         "Content-Type": "text/html; charset=UTF-8",
         "Transfer-Encoding": "chunked",

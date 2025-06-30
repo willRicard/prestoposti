@@ -3,14 +3,12 @@ import devServer, { defaultOptions } from "@hono/vite-dev-server";
 import bunAdapter from "@hono/vite-dev-server/bun";
 
 export default defineConfig(({ mode }) => {
-  if (mode === "client") {
+  if (mode === "production") {
     return {
       build: {
+        manifest: true,
         rollupOptions: {
           input: "./src/client.tsx",
-          output: {
-            entryFileNames: "build/client.js",
-          },
         },
       },
     };
