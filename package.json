@@ -1,8 +1,8 @@
 {
   "name": "prestoposti",
   "scripts": {
-    "dev": "bun run --hot src/index.tsx",
-    "build": "bun build src/index.tsx --outdir ./build"
+    "dev": "bunx --bun vite",
+    "build": "vite build && bun build src/index.tsx --outdir ./build"
   },
   "dependencies": {
     "hono": "^4.8.3",
