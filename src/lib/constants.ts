@@ -21,6 +21,11 @@ export const MIN_PARTY_SIZE = 1;
  */
 export const DEFAULT_PARTY_SIZE = 2;
 
+/**
+ * Hide delay in milliseconds for modal UI components.
+ */
+export const MODAL_DELAY = 6000;
+
 export type QueueItemData = {
   name: string;
   partySize: number;
