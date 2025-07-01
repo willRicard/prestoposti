@@ -50,7 +50,7 @@ export default function QueueForm({
     if (onSubmit) {
       onSubmit({ name, partySize });
     }
-  }, [name, partySize]);
+  }, [name, partySize, onSubmit]);
 
   return (
     <>

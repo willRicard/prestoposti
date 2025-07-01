@@ -1,9 +1,17 @@
 import { Hono } from "hono";
 import { serveStatic } from "hono/bun";
+import { zValidator } from "@hono/zod-validator";
+import z from "zod";
 
 import { renderToReadableStream } from "react-dom/server.browser";
 
 import App from "./app.tsx";
+
+import {
+  MIN_PARTY_SIZE,
+  SEAT_CAPACITY,
+  type QueueItemData,
+} from "./lib/constants.ts";
 
 const app = new Hono();
 
@@ -13,6 +21,28 @@ app
     serveStatic({
       root: "./dist",
     }),
+  )
+  .post(
+    "/api/queue",
+    zValidator(
+      "json",
+      z.object({
+        // name not empty
+        name: z.string().min(1),
+        // MIN_PARTY_SIZE <= partySize <= SEAT_CAPACITY
+        partySize: z.number().gte(MIN_PARTY_SIZE).lte(SEAT_CAPACITY),
+      }),
+      (result, c) => {
+        if (!result.success) {
+          return c.text("ERR", 400);
+        }
+      },
+    ),
+    async (c) => {
+      const { name, partySize } = c.req.valid("json") as QueueItemData;
+      // TODO(gricard): Add queue record to MongoDB
+      return c.json({ status: "pending" });
+    },
   )
   .get("/", async (c) => {
     const isProduction = process.env.NODE_ENV === "production";
