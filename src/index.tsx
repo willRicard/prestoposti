@@ -27,21 +27,27 @@ app
           <meta content="width=device-width, initial-scale=1" name="viewport" />
           <title>PrestoPosti</title>
           {isProduction ? (
-            <link rel="stylesheet" href={manifest["src/client.tsx"].css} />
+            // Fetch bundled production styles
+            <>
+              <link rel="stylesheet" href={manifest["src/client.tsx"].css} />
+              <link rel="stylesheet" href="/assets/index.css" />
+            </>
           ) : (
-            ""
+            // Load development script otherwise
+            // cannot use `bootstrapScripts` as type="module" is required
+            <script type="module" src="/src/client.tsx" />
           )}
         </head>
         <body>
           <App />
         </body>
       </html>,
-      {
-        // Load compiled entry script if applicable
-        bootstrapScripts: [
-          isProduction ? manifest["src/client.tsx"].file : "/src/client.tsx",
-        ],
-      },
+      isProduction
+        ? {
+            // Load compiled entry script if applicable
+            bootstrapScripts: [manifest["src/client.tsx"].file],
+          }
+        : {},
     );
     return c.body(stream, {
       // Enable support for Web Streams

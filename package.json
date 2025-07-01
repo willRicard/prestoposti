@@ -3,7 +3,7 @@
   "type": "module",
   "scripts": {
     "dev": "bunx --bun vite",
-    "build": "vite build && bun build src/index.tsx --outdir ./build --target bun --production"
+    "build": "vite build && bun build src/index.tsx --outdir ./build --target bun --production && cp build/index.css dist/assets/"
   },
   "dependencies": {
     "@fontsource/roboto": "^5.2.6",
