@@ -1,13 +1,20 @@
+"use server";
 import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
 import z from "zod";
+import { SignJWT } from "jose";
 
 import {
   MIN_PARTY_SIZE,
   SEAT_CAPACITY,
+  QUEUE_TOKEN_ALG,
+  QUEUE_TOKEN_LIFETIME,
   type QueueItemData,
 } from "../lib/constants.ts";
 import { queueAppend } from "./database.ts";
+
+const secretKey = process.env.JWT_SECRET;
+const encodedKey = new TextEncoder().encode(secretKey);
 
 const app = new Hono();
 
@@ -33,7 +40,15 @@ app.post(
     if (id === "") {
       return c.text("ERR", 500);
     }
-    return c.json({ id, eta });
+
+    // Issue JWT to manage queue entry for some time:
+    const token = await new SignJWT({ id })
+      .setProtectedHeader({ alg: QUEUE_TOKEN_ALG })
+      .setIssuedAt()
+      .setExpirationTime(QUEUE_TOKEN_LIFETIME)
+      .sign(encodedKey);
+
+    return c.json({ token, eta });
   },
 );
 

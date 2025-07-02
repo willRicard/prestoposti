@@ -29,6 +29,20 @@ export const MIN_PARTY_SIZE = 1;
 export const DEFAULT_PARTY_SIZE = 2;
 
 /**
+ * Queue management JWT lifetime.
+ *
+ * Defaults to two hours.
+ */
+export const QUEUE_TOKEN_LIFETIME = "2h";
+
+/**
+ * Queue token signing algorithm.
+ *
+ * Defaults to symmetric HS256 (requires a 32-byte long secret in .env).
+ */
+export const QUEUE_TOKEN_ALG = "HS256";
+
+/**
  * Hide delay in milliseconds for modal UI components.
  */
 export const MODAL_DELAY = 6000;
