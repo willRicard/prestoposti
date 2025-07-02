@@ -3,6 +3,13 @@
  */
 
 /**
+ * Service time per person in milliseconds.
+ *
+ * Hardcoded to three seconds per person.
+ */
+export const SERVICE_TIME = 3000;
+
+/**
  * Maximum restaurant seat capacity.
  *
  * Hardcoded to ten seats.
@@ -29,4 +36,11 @@ export const MODAL_DELAY = 6000;
 export type QueueItemData = {
   name: string;
   partySize: number;
+};
+
+export type ServerQueueItemData = QueueItemData & {
+  state: "waiting" | "active" | "done";
+  joinDate: Date;
+  checkInDate?: Date;
+  checkOutDate?: Date;
 };

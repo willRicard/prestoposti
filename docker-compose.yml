@@ -16,9 +16,4 @@ services:
       - MONGO_INITDB_ROOT_PASSWORD=${DATABASE_PASSWORD}
       - MONGO_INITDB_DATABASE=${DATABASE_NAME}
     ports:
-      - "27017:27010"
-    volumes:
-      - mongodb_data:/data/db
-
-volumes:
-  mongodb_data:
+      - "27017:27017"

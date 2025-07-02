@@ -12,6 +12,7 @@ import {
   SEAT_CAPACITY,
   type QueueItemData,
 } from "./lib/constants.ts";
+import { queueAppend } from "./server/database.ts";
 
 const app = new Hono();
 
@@ -40,8 +41,11 @@ app
     ),
     async (c) => {
       const { name, partySize } = c.req.valid("json") as QueueItemData;
-      // TODO(gricard): Add queue record to MongoDB
-      return c.json({ status: "pending" });
+      const { id, eta } = await queueAppend({ name, partySize });
+      if (id === "") {
+        return c.text("ERR", 500);
+      }
+      return c.json({ id, eta });
     },
   )
   .get("/", async (c) => {
