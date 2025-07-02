@@ -1,4 +1,4 @@
-import { Outlet, createRootRoute } from "@tanstack/react-router";
+import { Link, Outlet, createRootRoute } from "@tanstack/react-router";
 import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
 
 import Container from "@mui/material/Container";
@@ -7,6 +7,15 @@ import Select from "@mui/material/Select";
 
 export const Route = createRootRoute({
   component: RootComponent,
+  notFoundComponent: () => (
+    <div className="flex flex-col items-center justify-center">
+      <h1 className="font-bold">404 Not Found</h1>
+      <p>This is probably not what you are looking for:</p>
+      <Link className="underline" to="/">
+        return Home
+      </Link>
+    </div>
+  ),
 });
 
 function RootComponent() {
