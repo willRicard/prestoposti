@@ -2,6 +2,8 @@
 import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
 import z from "zod";
+
+import { jwt } from "hono/jwt";
 import { SignJWT } from "jose";
 
 import {
@@ -51,5 +53,12 @@ app.post(
     return c.json({ token, eta });
   },
 );
+
+app.use("/queue/*", jwt({ secret: process.env.JWT_SECRET ?? "" }));
+
+app.get("/queue/check", (c) => {
+  const payload = c.get("jwtPayload");
+  return c.text("Hello");
+});
 
 export default app;
