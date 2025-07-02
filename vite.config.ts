@@ -50,7 +50,6 @@ export default defineConfig(({ mode }) => {
         tailwindcss(),
         devServer({
           adapter: bunAdapter,
-          exclude: ["/*", ...defaultOptions.exclude],
           entry: "src/index.tsx",
         }),
       ],
