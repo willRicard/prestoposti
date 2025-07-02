@@ -1,7 +1,22 @@
-import { defineConfig } from "vite";
+import { defineConfig, type PluginOption } from "vite";
 import tailwindcss from "@tailwindcss/vite";
 import devServer, { defaultOptions } from "@hono/vite-dev-server";
 import bunAdapter from "@hono/vite-dev-server/bun";
+
+const serverDirectivePlugin = (): PluginOption => {
+  return {
+    name: "server-directive-plugin",
+    enforce: "pre",
+    transform(code) {
+      if (code.includes("use server")) {
+        return {
+          code: "",
+          map: null,
+        };
+      }
+    },
+  };
+};
 
 export default defineConfig(({ mode }) => {
   if (mode === "production") {
@@ -10,9 +25,15 @@ export default defineConfig(({ mode }) => {
         manifest: true,
         rollupOptions: {
           input: "./src/client.tsx",
+          onwarn(warning, warn) {
+            if (warning.code === "MODULE_LEVEL_DIRECTIVE") {
+              return;
+            }
+            warn(warning);
+          },
         },
       },
-      plugins: [tailwindcss()],
+      plugins: [tailwindcss(), serverDirectivePlugin()],
     };
   } else {
     return {
