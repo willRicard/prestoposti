@@ -8,5 +8,5 @@ done
 
 # Setup MongoDB Replica Set
 cd /
-echo 'rs.initiate({"_id": "rs0", "version": 1, "members": [{"_id": 0, "host": "mongodb:27017", "priority": 2}]})' > config-replica.js
+echo 'rs.initiate({"_id": "rs0", "version": 1, "members": [{"_id": 0, "host": "localhost:27017", "priority": 2}]})' > config-replica.js
 mongosh -u "$DATABASE_USER" -p "$DATABASE_PASSWORD" --host mongodb:27017 /config-replica.js
