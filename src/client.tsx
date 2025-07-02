@@ -2,13 +2,9 @@ import "./globals.css";
 
 import { hydrateRoot } from "react-dom/client";
 
-import { RouterProvider } from "@tanstack/react-router";
-import router from "./router.ts";
+import { RouterClient } from "@tanstack/react-router/ssr/client";
+import { createRouter } from "./router.ts";
 
-declare module "@tanstack/react-router" {
-  interface Register {
-    router: typeof router;
-  }
-}
+const router = createRouter();
 
-hydrateRoot(document, <RouterProvider router={router} />);
+hydrateRoot(document, <RouterClient router={router} />);
