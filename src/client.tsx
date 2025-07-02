@@ -2,6 +2,13 @@ import "./globals.css";
 
 import { hydrateRoot } from "react-dom/client";
 
-import App from "./app.tsx";
+import { RouterProvider } from "@tanstack/react-router";
+import router from "./router.ts";
 
-hydrateRoot(document, <App />);
+declare module "@tanstack/react-router" {
+  interface Register {
+    router: typeof router;
+  }
+}
+
+hydrateRoot(document, <RouterProvider router={router} />);

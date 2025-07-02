@@ -1,5 +1,6 @@
 import { defineConfig, type PluginOption } from "vite";
 import tailwindcss from "@tailwindcss/vite";
+import { tanstackRouter } from "@tanstack/router-plugin/vite";
 import devServer, { defaultOptions } from "@hono/vite-dev-server";
 import bunAdapter from "@hono/vite-dev-server/bun";
 
@@ -33,7 +34,11 @@ export default defineConfig(({ mode }) => {
           },
         },
       },
-      plugins: [tailwindcss(), serverDirectivePlugin()],
+      plugins: [
+        tanstackRouter({ target: "react" }),
+        tailwindcss(),
+        serverDirectivePlugin(),
+      ],
     };
   } else {
     return {
@@ -41,6 +46,7 @@ export default defineConfig(({ mode }) => {
         external: ["react", "react-dom"],
       },
       plugins: [
+        tanstackRouter({ target: "react" }),
         tailwindcss(),
         devServer({
           adapter: bunAdapter,

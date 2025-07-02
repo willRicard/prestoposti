@@ -2,8 +2,9 @@ import { Hono } from "hono";
 import { serveStatic } from "hono/bun";
 
 import { renderToReadableStream } from "react-dom/server.browser";
+import { RouterProvider } from "@tanstack/react-router";
 
-import App from "./app.tsx";
+import router from "./router.ts";
 
 import apiRoutes from "./server/api.ts";
 
@@ -17,7 +18,7 @@ app
     }),
   )
   .route("/api", apiRoutes)
-  .get("/", async (c) => {
+  .get("/*", async (c) => {
     const isProduction = process.env.NODE_ENV === "production";
     let manifest = {};
     if (isProduction) {
@@ -42,7 +43,7 @@ app
           )}
         </head>
         <body>
-          <App />
+          <RouterProvider router={router} />
         </body>
       </html>,
       isProduction
