@@ -1,18 +1,11 @@
 import { Hono } from "hono";
 import { serveStatic } from "hono/bun";
-import { zValidator } from "@hono/zod-validator";
-import z from "zod";
 
 import { renderToReadableStream } from "react-dom/server.browser";
 
 import App from "./app.tsx";
 
-import {
-  MIN_PARTY_SIZE,
-  SEAT_CAPACITY,
-  type QueueItemData,
-} from "./lib/constants.ts";
-import { queueAppend } from "./server/database.ts";
+import apiRoutes from "./server/api.ts";
 
 const app = new Hono();
 
@@ -23,31 +16,7 @@ app
       root: "./dist",
     }),
   )
-  .post(
-    "/api/queue",
-    zValidator(
-      "json",
-      z.object({
-        // name not empty
-        name: z.string().min(1),
-        // MIN_PARTY_SIZE <= partySize <= SEAT_CAPACITY
-        partySize: z.number().gte(MIN_PARTY_SIZE).lte(SEAT_CAPACITY),
-      }),
-      (result, c) => {
-        if (!result.success) {
-          return c.text("ERR", 400);
-        }
-      },
-    ),
-    async (c) => {
-      const { name, partySize } = c.req.valid("json") as QueueItemData;
-      const { id, eta } = await queueAppend({ name, partySize });
-      if (id === "") {
-        return c.text("ERR", 500);
-      }
-      return c.json({ id, eta });
-    },
-  )
+  .route("/api", apiRoutes)
   .get("/", async (c) => {
     const isProduction = process.env.NODE_ENV === "production";
     let manifest = {};
