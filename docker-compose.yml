@@ -6,14 +6,36 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - MONGO_URI=mongodb://${DATABASE_USER}:${DATABASE_PASSWORD}@mongodb:27017/${DATABASE_NAME}
+      - MONGO_URI=mongodb://${DATABASE_USER}:${DATABASE_PASSWORD}@mongodb:27017/
     depends_on:
       - mongodb
   mongodb:
     image: mongo:latest
+    entrypoint:
+      - bash
+      - -c
+      - |
+        cp /keyfile /mongo_keyfile
+        chmod 400 /mongo_keyfile
+        chown 999:999 /mongo_keyfile
+        exec docker-entrypoint.sh $$@
+    command: "mongod --replSet rs0 --keyFile /mongo_keyfile"
+    volumes:
+      - ./keyfile:/keyfile
     environment:
       - MONGO_INITDB_ROOT_USERNAME=${DATABASE_USER}
       - MONGO_INITDB_ROOT_PASSWORD=${DATABASE_PASSWORD}
       - MONGO_INITDB_DATABASE=${DATABASE_NAME}
     ports:
       - "27017:27017"
+  mongo-setup:
+    image: mongo:latest
+    depends_on:
+      - mongodb
+    restart: no
+    entrypoint: ["/bin/bash", "/setup_mongo.sh"]
+    volumes:
+      - ./setup_mongo.sh:/setup_mongo.sh
+    environment:
+      - DATABASE_USER=${DATABASE_USER}
+      - DATABASE_PASSWORD=${DATABASE_PASSWORD}

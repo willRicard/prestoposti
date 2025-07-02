@@ -7,6 +7,7 @@ dist/
 
 # misc
 .DS_Store
+keyfile
 *.pem
 
 # env files
