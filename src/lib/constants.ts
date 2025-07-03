@@ -58,3 +58,35 @@ export type ServerQueueItemData = QueueItemData & {
   checkInDate?: Date;
   checkOutDate?: Date;
 };
+
+/**
+ * Notify client of check in eligibility.
+ */
+export type PrestoPostiEligibilityMessage = {
+  type: "eligibility";
+  partySize: number;
+  eligible: boolean;
+};
+
+/**
+ * Perform check in via WebSocket.
+ *
+ * checkInDate is present in server reply.
+ */
+export type PrestoPostiCheckInMessage = {
+  type: "checkin";
+  checkInDate?: Date;
+};
+
+/**
+ * Notify client of check out via WebSocket.
+ */
+export type PrestoPostiCheckOutMessage = {
+  type: "checkout";
+  checkOutDate: Date;
+};
+
+export type PrestoPostiMessage =
+  | PrestoPostiEligibilityMessage
+  | PrestoPostiCheckInMessage
+  | PrestoPostiCheckOutMessage;

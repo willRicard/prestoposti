@@ -14,6 +14,8 @@ import {
   QUEUE_TOKEN_ALG,
   QUEUE_TOKEN_LIFETIME,
   type QueueItemData,
+  type PrestoPostiCheckOutMessage,
+  type PrestoPostiEligibilityMessage,
 } from "../lib/constants.ts";
 import { queueAppend, queueTick } from "./database.ts";
 import { type WSContext } from "hono/ws";
@@ -75,23 +77,21 @@ async function tick() {
 
   // Notify leaving parties of check out date
   for (const leavingParty of checkedOut) {
-    wsMap.get(leavingParty._id.toString())?.send(
-      JSON.stringify({
-        type: "checkout",
-        checkOutDate: leavingParty.checkOutDate,
-      }),
-    );
+    const message: PrestoPostiCheckOutMessage = {
+      type: "checkout",
+      checkOutDate: leavingParty.checkOutDate ?? new Date(),
+    };
+    wsMap.get(leavingParty._id.toString())?.send(JSON.stringify(message));
   }
 
   // Notify eligible parties to enable check in button
   for (const eligibleParty of eligible) {
-    wsMap.get(eligibleParty._id.toString())?.send(
-      JSON.stringify({
-        type: "eligibility",
-        partySize: eligibleParty.partySize,
-        eligible: true,
-      }),
-    );
+    const message: PrestoPostiEligibilityMessage = {
+      type: "eligibility",
+      partySize: eligibleParty.partySize,
+      eligible: true,
+    };
+    wsMap.get(eligibleParty._id.toString())?.send(JSON.stringify(message));
   }
 }
 

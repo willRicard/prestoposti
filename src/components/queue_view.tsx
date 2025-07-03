@@ -7,6 +7,10 @@ import Button from "@mui/material/Button";
 import { hc } from "hono/client";
 import app from "../index.tsx";
 import { type WSMessageReceive } from "hono/ws";
+import {
+  type PrestoPostiEligibilityMessage,
+  type PrestoPostiMessage,
+} from "../lib/constants.ts";
 
 export default function QueueView() {
   const [disabled, setDisabled] = useState(true);
@@ -24,11 +28,10 @@ export default function QueueView() {
       ws.send(JSON.stringify({ token }));
     });
     ws.addEventListener("message", (event: MessageEvent<WSMessageReceive>) => {
-      const message = event.data.toString();
       try {
-        const { type } = JSON.parse(message);
-        if (type === "eligibility") {
-          const { partySize, eligible } = JSON.parse(message);
+        const message = JSON.parse(event.data.toString()) as PrestoPostiMessage;
+        if (message.type === "eligibility") {
+          const { partySize, eligible } = message;
           if (eligible) {
             setDisabled(false);
           }
