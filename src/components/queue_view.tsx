@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { useQueue } from "../client/hooks";
 
 import Button from "@mui/material/Button";
@@ -27,6 +27,7 @@ export default function QueueView() {
   const [done, setDone] = useState(false);
 
   const { token, deleteToken } = useQueue();
+  const navigate = useNavigate({ from: "/queue" });
 
   useEffect(() => {
     if (!token || token === "") {
@@ -67,8 +68,13 @@ export default function QueueView() {
           setDisabled(true);
           setCountdownDate(DateTime.now().minus({ minutes: 1 }));
           setShowCountdown(true);
+          localStorage.removeItem("pp-token");
         }
       } catch {}
+    });
+    ws.addEventListener("close", () => {
+      localStorage.removeItem("pp-token");
+      navigate({ to: "/" });
     });
   }, [token]);
 
