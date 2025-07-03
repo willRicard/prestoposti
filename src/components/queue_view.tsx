@@ -24,6 +24,7 @@ export default function QueueView() {
 
   const [countdownDate, setCountdownDate] = useState<DateTime>(DateTime.now());
   const [showCountdown, setShowCountdown] = useState(false);
+  const [done, setDone] = useState(false);
 
   const { token, deleteToken } = useQueue();
 
@@ -86,7 +87,12 @@ export default function QueueView() {
       <Link to="/" onClick={deleteToken} className="underline">
         Cancel and go back
       </Link>
-      {showCountdown ? <Countdown until={countdownDate} /> : ""}
+      {showCountdown ? (
+        <Countdown until={countdownDate} onDone={() => setDone(true)} />
+      ) : (
+        ""
+      )}
+      {done ? <p>Thank you! Please proceed to your payment</p> : ""}
       <Button
         variant="contained"
         color="success"

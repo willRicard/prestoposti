@@ -3,7 +3,13 @@ import { DateTime } from "luxon";
 
 import Typography from "@mui/material/Typography";
 
-export default function Countdown({ until }: { until: DateTime }) {
+export default function Countdown({
+  until,
+  onDone,
+}: {
+  until: DateTime;
+  onDone?: () => void;
+}) {
   const [text, setText] = useState("");
   const [intervalId, setIntervalId] = useState<NodeJS.Timeout>();
 
@@ -11,6 +17,9 @@ export default function Countdown({ until }: { until: DateTime }) {
     const duration = until.diff(DateTime.now());
     if (duration.toMillis() < 0) {
       clearInterval(intervalId);
+      if (onDone) {
+        onDone();
+      }
       return;
     }
     setText(duration.toFormat("mm:ss"));
@@ -18,7 +27,6 @@ export default function Countdown({ until }: { until: DateTime }) {
 
   // Update countdown display
   useEffect(() => {
-    console.log(until.toISO());
     if (intervalId) {
       clearInterval(intervalId);
     }
