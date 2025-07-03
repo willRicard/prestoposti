@@ -167,7 +167,9 @@ export async function queueTick(): Promise<{
   return { checkedOut: [], eligible: [] };
 }
 
-export async function queueCheckIn(id: string): Promise<boolean> {
+export async function queueCheckIn(
+  id: string,
+): Promise<ServerQueueItemData | null> {
   if (!client) {
     initClient();
   }
@@ -191,12 +193,13 @@ export async function queueCheckIn(id: string): Promise<boolean> {
       throw new Error("Database checkin failed");
     }
 
+    const findResult = await queue.findOne({ _id: new ObjectId(id) });
     await session.commitTransaction();
+    return findResult as ServerQueueItemData | null;
   } catch {
     await session.abortTransaction();
   } finally {
     await session.endSession();
   }
-
-  return false;
+  return null;
 }

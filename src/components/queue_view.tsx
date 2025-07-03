@@ -21,7 +21,6 @@ let ws: WebSocket | null = null;
 
 export default function QueueView() {
   const [disabled, setDisabled] = useState(true);
-  const [partySize, setPartySize] = useState(DEFAULT_PARTY_SIZE);
 
   const [countdownDate, setCountdownDate] = useState<DateTime>(DateTime.now());
   const [showCountdown, setShowCountdown] = useState(false);
@@ -50,17 +49,16 @@ export default function QueueView() {
       try {
         const message = JSON.parse(event.data.toString()) as PrestoPostiMessage;
         if (message.type === "eligibility") {
-          const { partySize, eligible } = message;
+          const { eligible } = message;
           if (eligible) {
             setDisabled(false);
-            setPartySize(partySize);
           }
         } else if (message.type === "checkin") {
           setDisabled(true);
           setCountdownDate(
             DateTime.fromISO((message.checkInDate ?? "") as string) // serialization turns Date to ISO string
               .plus({
-                milliseconds: partySize * SERVICE_TIME,
+                milliseconds: (message.partySize ?? 0) * SERVICE_TIME,
               }),
           );
           setShowCountdown(true);

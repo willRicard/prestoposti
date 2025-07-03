@@ -125,11 +125,16 @@ app.get(
             if (typeof payload.id !== "string") {
               throw new Error("JWT does not refer to queue item");
             }
-            await queueCheckIn(payload.id);
+            const party = await queueCheckIn(payload.id);
+            if (party === null) {
+              // checking in failed, timeout error on client
+              return;
+            }
 
             const reply: PrestoPostiCheckInMessage = {
               type: "checkin",
               token: "",
+              partySize: party.partySize,
               checkInDate: new Date(),
             };
             ws.send(JSON.stringify(reply));

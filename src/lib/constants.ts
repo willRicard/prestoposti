@@ -79,11 +79,12 @@ export type PrestoPostiEligibilityMessage = {
 /**
  * Perform check in via WebSocket.
  *
- * checkInDate is present in server reply.
+ * partySize and checkInDate are present in server reply.
  */
 export type PrestoPostiCheckInMessage = {
   type: "checkin";
   token: string;
+  partySize?: number;
   checkInDate?: Date;
 };
 
