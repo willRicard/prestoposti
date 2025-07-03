@@ -224,9 +224,9 @@ test("check in order", async () => {
   expect(activeParties[0].name).toEqual("Party #1");
   expect(activeParties[0].checkInDate).toBeDate();
 
-  // Party #3 cannot check in before Party #2
-  //const tooEarlyCheckIn = await database.queueCheckIn(ids[2]);
-  //expect(tooEarlyCheckIn).toBeNull();
+  // Eligible Batching: Party #3 can check in before Party #2
+  const earlyCheckIn = await database.queueCheckIn(ids[2]);
+  expect(earlyCheckIn).not.toBeNull();
 
   // Party #5 cannot check in as it not eligible
   const ineligibleCheckIn = await database.queueCheckIn(ids[4]);

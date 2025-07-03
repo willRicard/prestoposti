@@ -1,5 +1,11 @@
 "use server";
-import { MongoClient, ObjectId, type WithId } from "mongodb";
+import {
+  MongoClient,
+  ObjectId,
+  type AggregationCursor,
+  type ClientSession,
+  type WithId,
+} from "mongodb";
 
 import {
   SEAT_CAPACITY,
@@ -92,6 +98,64 @@ export async function queueClear(): Promise<void> {
 }
 
 /**
+ * Count available seats and compute eligible parties.
+ * @param session Optional transaction session.
+ */
+async function _queueFindEligible(
+  session?: ClientSession,
+): Promise<WithId<ServerQueueItemData>[]> {
+  if (!client) {
+    initClient();
+  }
+  const queue = client.db("prestoposti").collection("queue");
+  // Count available seats.
+  const occupancyAgg = queue.aggregate(
+    [
+      {
+        $match: {
+          state: "active",
+        },
+      },
+      {
+        $group: { _id: null, occupancy: { $sum: "$partySize" } },
+      },
+    ],
+    { session },
+  );
+  const aggResult = await occupancyAgg.tryNext();
+  let availableSeats = aggResult
+    ? SEAT_CAPACITY - aggResult.occupancy
+    : SEAT_CAPACITY;
+
+  // Find eligible parties ordered by join date.
+  const eligible: WithId<ServerQueueItemData>[] = [];
+  const eligibleAgg = queue.aggregate(
+    [
+      {
+        $match: {
+          state: "waiting",
+          partySize: { $lte: availableSeats },
+        },
+      },
+      {
+        $sort: { joinDate: 1 },
+      },
+    ],
+    { session },
+  );
+  let nextSeats = 0;
+  for await (const item of eligibleAgg) {
+    const party = item as WithId<ServerQueueItemData>;
+    if (nextSeats + party.partySize > availableSeats) {
+      break;
+    }
+    eligible.push(party);
+    nextSeats += party.partySize;
+  }
+  return eligible;
+}
+
+/**
  * Check out any parties whose service time has elapsed.
  *
  * @returns Checked out and eligible parties.
@@ -146,50 +210,7 @@ export async function queueTick(targetTime: Date = new Date()): Promise<{
       throw new Error("Party check out count did not match");
     }
 
-    // Count available seats.
-    const occupancyAgg = queue.aggregate(
-      [
-        {
-          $match: {
-            state: "active",
-          },
-        },
-        {
-          $group: { _id: null, occupancy: { $sum: "$partySize" } },
-        },
-      ],
-      { session },
-    );
-    const aggResult = await occupancyAgg.tryNext();
-    let availableSeats = aggResult
-      ? SEAT_CAPACITY - aggResult.occupancy
-      : SEAT_CAPACITY;
-
-    // Find eligible parties ordered by join date.
-    const eligible: WithId<ServerQueueItemData>[] = [];
-    const eligibleAgg = queue.aggregate(
-      [
-        {
-          $match: {
-            state: "waiting",
-            partySize: { $lte: availableSeats },
-          },
-        },
-        {
-          $sort: { joinDate: 1 },
-        },
-      ],
-      { session },
-    );
-    let nextSeats = 0;
-    for await (const item of eligibleAgg) {
-      const party = item as WithId<ServerQueueItemData>;
-      if (nextSeats + party.partySize > availableSeats) {
-        break;
-      }
-      eligible.push(party);
-      nextSeats += party.partySize;
-    }
+    const eligible = await _queueFindEligible(session);
 
     await session.commitTransaction();
     return { checkedOut, eligible };
@@ -201,6 +222,12 @@ export async function queueTick(targetTime: Date = new Date()): Promise<{
   return { checkedOut: [], eligible: [] };
 }
 
+/**
+ * Perform item checkin checks and update state.
+ *
+ * @param id Queue item object id.
+ * @returns Checked in queue item or null if invalid check in.
+ */
 export async function queueCheckIn(
   id: string,
 ): Promise<ServerQueueItemData | null> {
@@ -212,6 +239,19 @@ export async function queueCheckIn(
     session.startTransaction();
 
     const queue = client.db("prestoposti").collection("queue");
+
+    // Supplied item must be eligible
+    const eligible = await _queueFindEligible(session);
+    let ok = false;
+    for (const party of eligible) {
+      if (party._id.toString() === id) {
+        ok = true;
+        break;
+      }
+    }
+    if (!ok) {
+      throw new Error("Ineligible check in");
+    }
 
     const updateResult = await queue.updateOne(
       { _id: new ObjectId(id) },
