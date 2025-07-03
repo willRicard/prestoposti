@@ -151,6 +151,8 @@ async function _queueFindEligible(
     }
     eligible.push(party);
     nextSeats += party.partySize;
+    // Force single party eligibility for spec compliance
+    break;
   }
   return eligible;
 }
