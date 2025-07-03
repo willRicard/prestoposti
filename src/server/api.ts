@@ -1,10 +1,11 @@
 "use server";
 import { Hono } from "hono";
+import { createBunWebSocket } from "hono/bun";
 import { zValidator } from "@hono/zod-validator";
 import z from "zod";
 
 import { jwt } from "hono/jwt";
-import { SignJWT } from "jose";
+import { SignJWT, jwtVerify } from "jose";
 
 import {
   MIN_PARTY_SIZE,
@@ -14,9 +15,17 @@ import {
   type QueueItemData,
 } from "../lib/constants.ts";
 import { queueAppend, queueTick } from "./database.ts";
+import { type WSContext } from "hono/ws";
+
+/**
+ * https://developer.mozilla.org/en-US/docs/Web/API/WebSocket/readyState
+ */
+const WS_CLOSED = 3;
 
 const secretKey = process.env.JWT_SECRET;
 const encodedKey = new TextEncoder().encode(secretKey);
+
+export const { websocket, upgradeWebSocket } = createBunWebSocket();
 
 const app = new Hono();
 
@@ -59,9 +68,38 @@ app.post(
 
 app.use("/queue/*", jwt({ secret: process.env.JWT_SECRET ?? "" }));
 
-app.get("/queue/check", (c) => {
-  const payload = c.get("jwtPayload");
-  return c.text("Hello");
-});
+const wsMap = new Map<string, WSContext<unknown>>();
+
+app.get(
+  "/ws",
+  upgradeWebSocket(() => {
+    return {
+      async onMessage(event, ws) {
+        try {
+          const { token } = JSON.parse(event.data.toString());
+
+          const { payload } = await jwtVerify(token, encodedKey, {
+            algorithms: [QUEUE_TOKEN_ALG],
+          });
+
+          if (typeof payload.id !== "string") {
+            throw new Error("JWT does not refer to queue item");
+          }
+          wsMap.set(payload.id, ws);
+        } catch (err) {
+          ws.close();
+        }
+      },
+      onClose: (_, ws) => {
+        // Clear any closed WebSockets
+        wsMap.forEach((value, key) => {
+          if (value.readyState === WS_CLOSED) {
+            wsMap.delete(key);
+          }
+        });
+      },
+    };
+  }),
+);
 
 export default app;

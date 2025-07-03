@@ -11,7 +11,7 @@ import {
 
 import { createRouter } from "./router.ts";
 
-import apiRoutes from "./server/api.ts";
+import apiRoutes, { websocket } from "./server/api.ts";
 
 const app = new Hono();
 
@@ -69,4 +69,8 @@ app
     );
   });
 
-export default app;
+export default {
+  app,
+  fetch: app.fetch,
+  websocket,
+};

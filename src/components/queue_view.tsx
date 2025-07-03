@@ -4,15 +4,24 @@ import { useQueue } from "../client/hooks";
 
 import Button from "@mui/material/Button";
 
+import { hc } from "hono/client";
+import app from "../index.tsx";
+
 export default function QueueView() {
   const [disabled, setDisabled] = useState(true);
 
   const { token, deleteToken } = useQueue();
 
   useEffect(() => {
-    if (token !== "") {
-      setDisabled(false);
+    if (!token || token === "") {
+      return;
     }
+
+    const client = hc<typeof app.app>("ws://localhost:3000/api");
+    const ws = client.ws.$ws(0);
+    ws.addEventListener("open", () => {
+      ws.send(JSON.stringify({ token }));
+    });
   }, [token]);
 
   return (
