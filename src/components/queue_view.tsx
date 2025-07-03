@@ -1,19 +1,24 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Link } from "@tanstack/react-router";
 import { useQueue } from "../client/hooks";
 
 import Button from "@mui/material/Button";
+import Typography from "@mui/material/Typography";
 
 import { hc } from "hono/client";
 import app from "../index.tsx";
 import { type WSMessageReceive } from "hono/ws";
 import {
-  type PrestoPostiEligibilityMessage,
   type PrestoPostiMessage,
+  type PrestoPostiTokenMessage,
+  type PrestoPostiCheckInMessage,
 } from "../lib/constants.ts";
+
+let ws: WebSocket | null = null;
 
 export default function QueueView() {
   const [disabled, setDisabled] = useState(true);
+  const [showCountdown, setShowCountdown] = useState(false);
 
   const { token, deleteToken } = useQueue();
 
@@ -23,9 +28,17 @@ export default function QueueView() {
     }
 
     const client = hc<typeof app.app>("ws://localhost:3000/api");
-    const ws = client.ws.$ws(0);
+    // @ts-expect-error
+    ws = client.ws.$ws(0);
+    if (!ws) {
+      return;
+    }
     ws.addEventListener("open", () => {
-      ws.send(JSON.stringify({ token }));
+      const message: PrestoPostiTokenMessage = {
+        type: "token",
+        token,
+      };
+      ws.send(JSON.stringify(message));
     });
     ws.addEventListener("message", (event: MessageEvent<WSMessageReceive>) => {
       try {
@@ -35,9 +48,24 @@ export default function QueueView() {
           if (eligible) {
             setDisabled(false);
           }
+        } else if (message.type === "checkin") {
+          setDisabled(true);
+          setShowCountdown(true);
         }
       } catch {}
     });
+  }, [token]);
+
+  const handleClick = useCallback(() => {
+    if (!ws) {
+      return;
+    }
+
+    const message: PrestoPostiCheckInMessage = {
+      type: "checkin",
+    };
+
+    ws.send(JSON.stringify(message));
   }, [token]);
 
   return (
@@ -46,7 +74,13 @@ export default function QueueView() {
       <Link to="/" onClick={deleteToken} className="underline">
         Cancel and go back
       </Link>
-      <Button variant="contained" color="success" disabled={disabled}>
+      {showCountdown ? <Typography>Service has started</Typography> : ""}
+      <Button
+        variant="contained"
+        color="success"
+        onClick={handleClick}
+        disabled={disabled}
+      >
         Check in
       </Button>
     </div>

@@ -14,6 +14,8 @@ import {
   QUEUE_TOKEN_ALG,
   QUEUE_TOKEN_LIFETIME,
   type QueueItemData,
+  type PrestoPostiMessage,
+  type PrestoPostiCheckInMessage,
   type PrestoPostiCheckOutMessage,
   type PrestoPostiEligibilityMessage,
 } from "../lib/constants.ts";
@@ -101,18 +103,28 @@ app.get(
     return {
       async onMessage(event, ws) {
         try {
-          const { token } = JSON.parse(event.data.toString());
+          const message = JSON.parse(
+            event.data.toString(),
+          ) as PrestoPostiMessage;
+          if (message.type === "token") {
+            const { payload } = await jwtVerify(message.token, encodedKey, {
+              algorithms: [QUEUE_TOKEN_ALG],
+            });
 
-          const { payload } = await jwtVerify(token, encodedKey, {
-            algorithms: [QUEUE_TOKEN_ALG],
-          });
-
-          if (typeof payload.id !== "string") {
-            throw new Error("JWT does not refer to queue item");
-          }
-          wsMap.set(payload.id, ws);
-          if (!wsInterval) {
-            wsInterval = setInterval(tick, SERVICE_TIME);
+            if (typeof payload.id !== "string") {
+              throw new Error("JWT does not refer to queue item");
+            }
+            wsMap.set(payload.id, ws);
+            if (!wsInterval) {
+              wsInterval = setInterval(tick, SERVICE_TIME);
+            }
+          } else if (message.type === "checkin") {
+            // TODO(gricard): Apply check in to database queue
+            const reply: PrestoPostiCheckInMessage = {
+              type: "checkin",
+              checkInDate: new Date(),
+            };
+            ws.send(JSON.stringify(reply));
           }
         } catch (err) {
           ws.close();
