@@ -19,7 +19,7 @@ import {
   type PrestoPostiCheckOutMessage,
   type PrestoPostiEligibilityMessage,
 } from "../lib/constants.ts";
-import { queueAppend, queueTick } from "./database.ts";
+import { queueAppend, queueCheckIn, queueTick } from "./database.ts";
 import { type WSContext } from "hono/ws";
 
 /**
@@ -119,9 +119,17 @@ app.get(
               wsInterval = setInterval(tick, SERVICE_TIME);
             }
           } else if (message.type === "checkin") {
-            // TODO(gricard): Apply check in to database queue
+            const { payload } = await jwtVerify(message.token, encodedKey, {
+              algorithms: [QUEUE_TOKEN_ALG],
+            });
+            if (typeof payload.id !== "string") {
+              throw new Error("JWT does not refer to queue item");
+            }
+            await queueCheckIn(payload.id);
+
             const reply: PrestoPostiCheckInMessage = {
               type: "checkin",
+              token: "",
               checkInDate: new Date(),
             };
             ws.send(JSON.stringify(reply));

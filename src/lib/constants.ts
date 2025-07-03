@@ -60,6 +60,14 @@ export type ServerQueueItemData = QueueItemData & {
 };
 
 /**
+ * Authenticate queue management with server.
+ */
+export type PrestoPostiTokenMessage = {
+  type: "token";
+  token: string;
+};
+
+/**
  * Notify client of check in eligibility.
  */
 export type PrestoPostiEligibilityMessage = {
@@ -75,6 +83,7 @@ export type PrestoPostiEligibilityMessage = {
  */
 export type PrestoPostiCheckInMessage = {
   type: "checkin";
+  token: string;
   checkInDate?: Date;
 };
 
@@ -87,6 +96,7 @@ export type PrestoPostiCheckOutMessage = {
 };
 
 export type PrestoPostiMessage =
+  | PrestoPostiTokenMessage
   | PrestoPostiEligibilityMessage
   | PrestoPostiCheckInMessage
   | PrestoPostiCheckOutMessage;

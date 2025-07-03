@@ -63,6 +63,7 @@ export default function QueueView() {
 
     const message: PrestoPostiCheckInMessage = {
       type: "checkin",
+      token: token,
     };
 
     ws.send(JSON.stringify(message));

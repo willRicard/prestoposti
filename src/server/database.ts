@@ -1,5 +1,5 @@
 "use server";
-import { MongoClient, type WithId } from "mongodb";
+import { MongoClient, ObjectId, type WithId } from "mongodb";
 
 import {
   SEAT_CAPACITY,
@@ -165,4 +165,38 @@ export async function queueTick(): Promise<{
     session.endSession();
   }
   return { checkedOut: [], eligible: [] };
+}
+
+export async function queueCheckIn(id: string): Promise<boolean> {
+  if (!client) {
+    initClient();
+  }
+  const session = client.startSession();
+  try {
+    session.startTransaction();
+
+    const queue = client.db("prestoposti").collection("queue");
+
+    const updateResult = await queue.updateOne(
+      { _id: new ObjectId(id) },
+      {
+        $set: {
+          state: "active",
+        },
+        $currentDate: { checkInDate: true },
+      },
+      { session },
+    );
+    if (updateResult.modifiedCount !== 1) {
+      throw new Error("Database checkin failed");
+    }
+
+    await session.commitTransaction();
+  } catch {
+    await session.abortTransaction();
+  } finally {
+    await session.endSession();
+  }
+
+  return false;
 }
