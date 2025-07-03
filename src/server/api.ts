@@ -13,7 +13,7 @@ import {
   QUEUE_TOKEN_LIFETIME,
   type QueueItemData,
 } from "../lib/constants.ts";
-import { queueAppend } from "./database.ts";
+import { queueAppend, queueTick } from "./database.ts";
 
 const secretKey = process.env.JWT_SECRET;
 const encodedKey = new TextEncoder().encode(secretKey);
@@ -38,10 +38,13 @@ app.post(
   ),
   async (c) => {
     const { name, partySize } = c.req.valid("json") as QueueItemData;
+
     const { id, eta } = await queueAppend({ name, partySize });
     if (id === "") {
       return c.text("ERR", 500);
     }
+
+    const { checkedOut } = await queueTick();
 
     // Issue JWT to manage queue entry for some time:
     const token = await new SignJWT({ id })
