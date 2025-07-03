@@ -10,8 +10,9 @@ import {
 
 let client: MongoClient;
 
-function initClient() {
-  client = new MongoClient(process.env.MONGO_URI ?? "");
+export function initClient(uri?: string) {
+  const envUri = process.env.MONGO_URI ?? "";
+  client = new MongoClient(uri ? uri : envUri);
 }
 
 /**
@@ -19,10 +20,12 @@ function initClient() {
  * enough seats.
  *
  * @param item Waiting party details.
+ * @param state Optional queue item state override.
  * @returns Created queue item identifier and ETA in milliseconds.
  */
 export async function queueAppend(
   item: QueueItemData,
+  state?: "active" | "done", // "waiting" is default
 ): Promise<{ id: string; eta: number }> {
   if (!client) {
     initClient();
@@ -37,9 +40,12 @@ export async function queueAppend(
     const serverItem: ServerQueueItemData = {
       name: item.name,
       partySize: item.partySize,
-      state: "waiting",
+      state: state ? state : "waiting",
       joinDate: new Date(),
     };
+    if (state === "active") {
+      serverItem.checkInDate = new Date();
+    }
 
     const result = await queue.insertOne(serverItem, { session });
     const id = result.insertedId.toString();
@@ -57,12 +63,40 @@ export async function queueAppend(
   return { id: "", eta: -1 };
 }
 
+export async function queueGet(state?: string): Promise<ServerQueueItemData[]> {
+  if (!client) {
+    initClient();
+  }
+  const findResult = client
+    .db("prestoposti")
+    .collection("queue")
+    .find(
+      state // match supplied state or any
+        ? {
+            state,
+          }
+        : {},
+    );
+  const items: ServerQueueItemData[] = [];
+  for await (const item of findResult) {
+    items.push(item as WithId<ServerQueueItemData>);
+  }
+  return items;
+}
+
+export async function queueClear(): Promise<void> {
+  if (!client) {
+    initClient();
+  }
+  await client.db("prestoposti").collection("queue").deleteMany();
+}
+
 /**
  * Check out any parties whose service time has elapsed.
  *
  * @returns Checked out and eligible parties.
  */
-export async function queueTick(): Promise<{
+export async function queueTick(targetTime: Date = new Date()): Promise<{
   checkedOut: WithId<ServerQueueItemData>[];
   eligible: WithId<ServerQueueItemData>[];
 }> {
@@ -84,7 +118,7 @@ export async function queueTick(): Promise<{
           "$checkInDate",
           {
             $subtract: [
-              new Date(), // requires an ISODate server-side
+              targetTime, // requires an ISODate Mongo-server-side
               { $multiply: ["$partySize", SERVICE_TIME] },
             ],
           },
