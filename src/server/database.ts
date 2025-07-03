@@ -34,29 +34,6 @@ export async function queueAppend(
     session.startTransaction();
     const queue = client.db("prestoposti").collection("queue");
 
-    // TODO(gricard): Check out any overdue guests
-
-    const occupancyAgg = queue.aggregate(
-      [
-        {
-          $match: {
-            state: "active",
-          },
-        },
-        { $group: { _id: null, occupancy: { $sum: "$partySize" } } },
-      ],
-      { session },
-    );
-    const aggResult = await occupancyAgg.tryNext();
-    const occupancy: number = aggResult ? aggResult.occupancy : 0;
-
-      const result = await queue.insertOne(serverItem, { session });
-
-      await session.commitTransaction();
-      return { id: result.insertedId.toString(), eta: 0 };
-    }
-
-    // Otherwise create in "waiting" state
     const serverItem: ServerQueueItemData = {
       name: item.name,
       partySize: item.partySize,
@@ -83,10 +60,11 @@ export async function queueAppend(
 /**
  * Check out any parties whose service time has elapsed.
  *
- * @returns Checked out parties.
+ * @returns Checked out and eligible parties.
  */
 export async function queueTick(): Promise<{
   checkedOut: WithId<ServerQueueItemData>[];
+  eligible: WithId<ServerQueueItemData>[];
 }> {
   if (!client) {
     initClient();
@@ -118,7 +96,6 @@ export async function queueTick(): Promise<{
     const checkedOut: WithId<ServerQueueItemData>[] = [];
     const checkOutResult = queue.find(serviceTimeElapsedFilter);
     for await (const result of checkOutResult) {
-      console.log(`Party ${JSON.stringify(result)} checks out`);
       checkedOut.push(result as WithId<ServerQueueItemData>);
     }
 
@@ -135,12 +112,57 @@ export async function queueTick(): Promise<{
       throw new Error("Party check out count did not match");
     }
 
+    // Count available seats.
+    const occupancyAgg = queue.aggregate(
+      [
+        {
+          $match: {
+            state: "active",
+          },
+        },
+        {
+          $group: { _id: null, occupancy: { $sum: "$partySize" } },
+        },
+      ],
+      { session },
+    );
+    const aggResult = await occupancyAgg.tryNext();
+    let availableSeats = aggResult
+      ? SEAT_CAPACITY - aggResult.occupancy
+      : SEAT_CAPACITY;
+
+    // Find eligible parties ordered by join date.
+    const eligible: WithId<ServerQueueItemData>[] = [];
+    const eligibleAgg = queue.aggregate(
+      [
+        {
+          $match: {
+            state: "waiting",
+            partySize: { $lt: availableSeats },
+          },
+        },
+        {
+          $sort: { joinDate: 1 },
+        },
+      ],
+      { session },
+    );
+    let nextSeats = 0;
+    for await (const item of eligibleAgg) {
+      const party = item as WithId<ServerQueueItemData>;
+      if (nextSeats + party.partySize > availableSeats) {
+        break;
+      }
+      eligible.push(party);
+      nextSeats += party.partySize;
+    }
+
     await session.commitTransaction();
-    return { checkedOut };
+    return { checkedOut, eligible };
   } catch {
     await session.abortTransaction();
   } finally {
     session.endSession();
   }
-  return { checkedOut: [] };
+  return { checkedOut: [], eligible: [] };
 }

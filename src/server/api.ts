@@ -44,7 +44,7 @@ app.post(
       return c.text("ERR", 500);
     }
 
-    const { checkedOut } = await queueTick();
+    const { checkedOut, eligible } = await queueTick();
 
     // Issue JWT to manage queue entry for some time:
     const token = await new SignJWT({ id })
