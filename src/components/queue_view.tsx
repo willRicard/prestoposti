@@ -3,9 +3,8 @@ import { Link } from "@tanstack/react-router";
 import { useQueue } from "../client/hooks";
 
 import Button from "@mui/material/Button";
-import Typography from "@mui/material/Typography";
-
-import { DateTime, Duration } from "luxon";
+import { DateTime } from "luxon";
+import Countdown from "./countdown.tsx";
 
 import { hc } from "hono/client";
 import app from "../index.tsx";
@@ -22,13 +21,10 @@ let ws: WebSocket | null = null;
 
 export default function QueueView() {
   const [disabled, setDisabled] = useState(true);
-
   const [partySize, setPartySize] = useState(DEFAULT_PARTY_SIZE);
 
   const [countdownDate, setCountdownDate] = useState<DateTime>(DateTime.now());
-  const [countdownText, setCountdownText] = useState("");
   const [showCountdown, setShowCountdown] = useState(false);
-  const [countdownInterval, setCountdownInterval] = useState<NodeJS.Timeout>(0);
 
   const { token, deleteToken } = useQueue();
 
@@ -73,25 +69,6 @@ export default function QueueView() {
     });
   }, [token]);
 
-  // Update countdown display
-  useEffect(() => {
-    if (countdownInterval) {
-      clearInterval(countdownInterval);
-    }
-
-    const updateText = () => {
-      const duration = countdownDate.diff(DateTime.now());
-      if (duration.toMillis() < 0) {
-        clearInterval(countdownInterval);
-        return;
-      }
-      setCountdownText(duration.toFormat("mm:ss"));
-    };
-
-    updateText();
-    setCountdownInterval(setInterval(updateText, 1000));
-  }, [countdownDate, showCountdown, partySize]);
-
   const handleClick = useCallback(() => {
     if (!ws) {
       return;
@@ -111,11 +88,7 @@ export default function QueueView() {
       <Link to="/" onClick={deleteToken} className="underline">
         Cancel and go back
       </Link>
-      {showCountdown ? (
-        <Typography variant="h1">{countdownText}</Typography>
-      ) : (
-        ""
-      )}
+      {showCountdown ? <Countdown until={countdownDate} /> : ""}
       <Button
         variant="contained"
         color="success"
