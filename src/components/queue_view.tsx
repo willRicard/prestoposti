@@ -63,6 +63,10 @@ export default function QueueView() {
               }),
           );
           setShowCountdown(true);
+        } else if (message.type === "checkout") {
+          setDisabled(true);
+          setCountdownDate(DateTime.now().minus({ minutes: 1 }));
+          setShowCountdown(true);
         }
       } catch {}
     });

@@ -19,7 +19,12 @@ import {
   type PrestoPostiCheckOutMessage,
   type PrestoPostiEligibilityMessage,
 } from "../lib/constants.ts";
-import { queueAppend, queueCheckIn, queueTick } from "./database.ts";
+import {
+  queueAppend,
+  queueCheckIn,
+  queueTick,
+  queueGetOne,
+} from "./database.ts";
 import { type WSContext } from "hono/ws";
 
 /**
@@ -117,6 +122,30 @@ app.get(
 
             if (typeof payload.id !== "string") {
               throw new Error("JWT does not refer to queue item");
+            }
+
+            const party = await queueGetOne(payload.id);
+            if (!party) {
+              throw new Error("JWT refers to invalid party");
+            }
+
+            // Notify new browser session of earlier messages
+            if (party.state === "active") {
+              const checkInMessage: PrestoPostiCheckInMessage = {
+                type: "checkin",
+                token: "",
+                partySize: party.partySize,
+                checkInDate: party.checkInDate ?? new Date(),
+              };
+              ws.send(JSON.stringify(checkInMessage));
+            } else if (party.state === "done") {
+              const checkOutMessage: PrestoPostiCheckOutMessage = {
+                type: "checkout",
+                checkOutDate: party.checkOutDate ?? new Date(),
+              };
+              ws.send(JSON.stringify(checkOutMessage));
+              ws.close();
+              return;
             }
 
             const sessions = wsMap.get(payload.id);

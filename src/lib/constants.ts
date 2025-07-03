@@ -85,7 +85,7 @@ export type PrestoPostiCheckInMessage = {
   type: "checkin";
   token: string;
   partySize?: number;
-  checkInDate?: Date;
+  checkInDate?: Date | string;
 };
 
 /**
@@ -93,7 +93,7 @@ export type PrestoPostiCheckInMessage = {
  */
 export type PrestoPostiCheckOutMessage = {
   type: "checkout";
-  checkOutDate: Date;
+  checkOutDate: Date | string;
 };
 
 export type PrestoPostiMessage =

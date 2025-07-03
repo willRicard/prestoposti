@@ -90,6 +90,18 @@ export async function queueGet(state?: string): Promise<ServerQueueItemData[]> {
   return items;
 }
 
+export async function queueGetOne(
+  id: string,
+): Promise<WithId<ServerQueueItemData> | null> {
+  if (!client) {
+    initClient();
+  }
+  return (await client
+    .db("prestoposti")
+    .collection("queue")
+    .findOne({ _id: new ObjectId(id) })) as WithId<ServerQueueItemData> | null;
+}
+
 export async function queueClear(): Promise<void> {
   if (!client) {
     initClient();

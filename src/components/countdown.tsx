@@ -16,6 +16,7 @@ export default function Countdown({
   const updateText = useCallback(() => {
     const duration = until.diff(DateTime.now());
     if (duration.toMillis() < 0) {
+      setText("00:00");
       clearInterval(intervalId);
       if (onDone) {
         onDone();
