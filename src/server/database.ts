@@ -138,7 +138,7 @@ export async function queueTick(): Promise<{
         {
           $match: {
             state: "waiting",
-            partySize: { $lt: availableSeats },
+            partySize: { $lte: availableSeats },
           },
         },
         {
