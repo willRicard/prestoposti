@@ -8,6 +8,7 @@ import { jwt } from "hono/jwt";
 import { SignJWT, jwtVerify } from "jose";
 
 import {
+  SERVICE_TIME,
   MIN_PARTY_SIZE,
   SEAT_CAPACITY,
   QUEUE_TOKEN_ALG,
@@ -53,8 +54,6 @@ app.post(
       return c.text("ERR", 500);
     }
 
-    const { checkedOut, eligible } = await queueTick();
-
     // Issue JWT to manage queue entry for some time:
     const token = await new SignJWT({ id })
       .setProtectedHeader({ alg: QUEUE_TOKEN_ALG })
@@ -69,6 +68,32 @@ app.post(
 app.use("/queue/*", jwt({ secret: process.env.JWT_SECRET ?? "" }));
 
 const wsMap = new Map<string, WSContext<unknown>>();
+let wsInterval: NodeJS.Timeout;
+
+async function tick() {
+  const { checkedOut, eligible } = await queueTick();
+
+  // Notify leaving parties of check out date
+  for (const leavingParty of checkedOut) {
+    wsMap.get(leavingParty._id.toString())?.send(
+      JSON.stringify({
+        type: "checkout",
+        checkOutDate: leavingParty.checkOutDate,
+      }),
+    );
+  }
+
+  // Notify eligible parties to enable check in button
+  for (const eligibleParty of eligible) {
+    wsMap.get(eligibleParty._id.toString())?.send(
+      JSON.stringify({
+        type: "eligibility",
+        partySize: eligibleParty.partySize,
+        eligible: true,
+      }),
+    );
+  }
+}
 
 app.get(
   "/ws",
@@ -86,6 +111,9 @@ app.get(
             throw new Error("JWT does not refer to queue item");
           }
           wsMap.set(payload.id, ws);
+          if (!wsInterval) {
+            wsInterval = setInterval(tick, SERVICE_TIME);
+          }
         } catch (err) {
           ws.close();
         }

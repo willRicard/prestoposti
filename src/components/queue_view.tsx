@@ -6,6 +6,7 @@ import Button from "@mui/material/Button";
 
 import { hc } from "hono/client";
 import app from "../index.tsx";
+import { type WSMessageReceive } from "hono/ws";
 
 export default function QueueView() {
   const [disabled, setDisabled] = useState(true);
@@ -21,6 +22,18 @@ export default function QueueView() {
     const ws = client.ws.$ws(0);
     ws.addEventListener("open", () => {
       ws.send(JSON.stringify({ token }));
+    });
+    ws.addEventListener("message", (event: MessageEvent<WSMessageReceive>) => {
+      const message = event.data.toString();
+      try {
+        const { type } = JSON.parse(message);
+        if (type === "eligibility") {
+          const { partySize, eligible } = JSON.parse(message);
+          if (eligible) {
+            setDisabled(false);
+          }
+        }
+      } catch {}
     });
   }, [token]);
 
