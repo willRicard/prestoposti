@@ -50,17 +50,6 @@ export async function queueAppend(
     const aggResult = await occupancyAgg.tryNext();
     const occupancy: number = aggResult ? aggResult.occupancy : 0;
 
-    // If there are enough seats already,
-    // accept the new party immediately
-    if (occupancy + item.partySize <= SEAT_CAPACITY) {
-      const serverItem: ServerQueueItemData = {
-        name: item.name,
-        partySize: item.partySize,
-        state: "active",
-        joinDate: new Date(),
-        checkInDate: new Date(),
-      };
-
       const result = await queue.insertOne(serverItem, { session });
 
       await session.commitTransaction();
