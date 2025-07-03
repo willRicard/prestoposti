@@ -5,6 +5,12 @@ export function useQueue() {
 
   // Load token from localStorage if available
   useEffect(() => {
+    window.addEventListener("storage", (event) => {
+      if (event.key === "pp-token") {
+        setToken(event.newValue ?? "");
+      }
+    });
+
     const localToken = localStorage.getItem("pp-token");
     if (!localToken) {
       return;
