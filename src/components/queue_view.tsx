@@ -1,16 +1,15 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router";
+import { useQueue } from "../client/hooks";
 
 import Button from "@mui/material/Button";
 
-export default function QueueView({ token }: { token: string }) {
+export default function QueueView() {
   const [disabled, setDisabled] = useState(true);
-  const navigate = useNavigate({ from: "/queue" });
+
+  const { token, deleteToken } = useQueue();
 
   useEffect(() => {
-    if (!token) {
-      navigate({ to: "/" });
-    }
     if (token !== "") {
       setDisabled(false);
     }
@@ -19,6 +18,9 @@ export default function QueueView({ token }: { token: string }) {
   return (
     <div className="flex flex-col gap-9">
       <h2>Thank you for your patience</h2>
+      <Link to="/" onClick={deleteToken} className="underline">
+        Cancel and go back
+      </Link>
       <Button variant="contained" color="success" disabled={disabled}>
         Check in
       </Button>

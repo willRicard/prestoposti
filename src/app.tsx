@@ -1,41 +1,25 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "@tanstack/react-router";
 
 import Alert from "@mui/material/Alert";
 import Snackbar from "@mui/material/Snackbar";
 
 import QueueForm from "./components/queue_form";
 import { MODAL_DELAY, type QueueItemData } from "./lib/constants";
+import { useQueue } from "./client/hooks";
 
 const App = () => {
-  const [token, setToken] = useState("");
   const [error, setError] = useState("");
 
-  // Load token from localStorage if available
-  useEffect(() => {
-    const localToken = localStorage.getItem("pp-token");
-    if (localToken) {
-      setToken(token);
-    }
-  }, []);
+  const { token, setToken } = useQueue();
+  const navigate = useNavigate({ from: "/" });
 
   // Show waiting UI when in queue
   useEffect(() => {
     if (!token) {
       return;
     }
-    fetch("/api/queue/check", {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    })
-      .then(async (res) => {
-        if (res.status !== 200) {
-          throw new Error(res.statusText);
-        }
-      })
-      .catch((err) => {
-        setError(err.toString());
-      });
+    navigate({ to: "/queue" });
   }, [token]);
 
   const handleSubmit = (req: QueueItemData) => {
@@ -51,7 +35,6 @@ const App = () => {
           throw new Error(res.statusText);
         }
         const { token, eta } = await res.json();
-        localStorage.setItem("pp-token", token);
         setToken(token);
       })
       .catch((err) => {
