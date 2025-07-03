@@ -71,7 +71,7 @@ app.post(
 
 app.use("/queue/*", jwt({ secret: process.env.JWT_SECRET ?? "" }));
 
-const wsMap = new Map<string, WSContext<unknown>>();
+const wsMap = new Map<string, WSContext<unknown>[]>();
 let wsInterval: NodeJS.Timeout;
 
 async function tick() {
@@ -83,7 +83,9 @@ async function tick() {
       type: "checkout",
       checkOutDate: leavingParty.checkOutDate ?? new Date(),
     };
-    wsMap.get(leavingParty._id.toString())?.send(JSON.stringify(message));
+    wsMap.get(leavingParty._id.toString())?.forEach((ws) => {
+      ws.send(JSON.stringify(message));
+    });
   }
 
   // Notify eligible parties to enable check in button
@@ -93,7 +95,9 @@ async function tick() {
       partySize: eligibleParty.partySize,
       eligible: true,
     };
-    wsMap.get(eligibleParty._id.toString())?.send(JSON.stringify(message));
+    wsMap.get(eligibleParty._id.toString())?.forEach((ws) => {
+      ws.send(JSON.stringify(message));
+    });
   }
 }
 
@@ -114,7 +118,14 @@ app.get(
             if (typeof payload.id !== "string") {
               throw new Error("JWT does not refer to queue item");
             }
-            wsMap.set(payload.id, ws);
+
+            const sessions = wsMap.get(payload.id);
+            if (!sessions) {
+              wsMap.set(payload.id, [ws]);
+            } else {
+              sessions.push(ws);
+            }
+
             if (!wsInterval) {
               wsInterval = setInterval(tick, SERVICE_TIME);
             }
@@ -137,7 +148,13 @@ app.get(
               partySize: party.partySize,
               checkInDate: new Date(),
             };
-            ws.send(JSON.stringify(reply));
+            // Send check in message to all open sessions
+            const sessions = wsMap.get(payload.id);
+            if (sessions) {
+              sessions.forEach((otherWs) => {
+                otherWs.send(JSON.stringify(reply));
+              });
+            }
           }
         } catch (err) {
           ws.close();
@@ -146,7 +163,15 @@ app.get(
       onClose: (_, ws) => {
         // Clear any closed WebSockets
         wsMap.forEach((value, key) => {
-          if (value.readyState === WS_CLOSED) {
+          // Keep sessions with at least 1 open WS.
+          let alive = false;
+          value.forEach((otherWs) => {
+            if (otherWs.readyState !== WS_CLOSED) {
+              alive = true;
+            }
+          });
+          // Remove sessions with no WS
+          if (!alive) {
             wsMap.delete(key);
           }
         });
