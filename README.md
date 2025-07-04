@@ -1,5 +1,26 @@
 # TableCheck SWE Fullstack Take-Home Assignment
 
+**Submissioner** Guillaume RICARD
+
+## Running Instructions
+
+For your convenience, an example `.env` file is included in this repository so `docker compose up` works right away. Here is an overview of the included config options:
+
+```
+DATABASE_USER=root                           # MongoDB username
+DATABASE_PASSWORD=example                    # MongoDB password
+DATABASE_NAME=prestoposti                    # MonboDB database name
+JWT_SECRET=JqCYGo18wvRwUTbd2OPrCmMjtaWlSpKvo # at least 32-byte secret
+```
+
+Wait for the `mongodb-setup-1 exited with code 0` message and open `http://localhost:3000` in a browser to use the app.
+
+## Architecture Overview
+
+Please have a look to [design.md](design.md) for a brief architecture overview.
+
+---
+
 Remote Waitlist Manager is a full-stack application designed to handle the waitlist of your restaurant. It manages seating, queueing, and notifications for your diners. **Multiple parties** should be able to join your restaurant's waitlist **concurrently**. Instead of waiting in line to write your name on a piece of paper, you can now join the waitlist virtually and get notified when your table is ready. This will increase your restaurant's efficiency and provide a better experience for your customers.
 
 The user flow is as follows:
@@ -25,7 +46,7 @@ SPAs are not allowed.
 
 You must use one of these frameworks/libs/implementations:
 
-- Pure vanilla js with *no* dependencies.
+- Pure vanilla js with _no_ dependencies.
 - React
 - HTMX
 
